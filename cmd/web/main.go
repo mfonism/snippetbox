@@ -8,6 +8,11 @@ import (
 func main() {
 	mux := http.NewServeMux()
 
+	fileServer := http.FileServer(http.Dir("./ui/static"))
+	// we need to strip the `/static` prefix off of the URL
+	// before sending it into the file server
+	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+
 	mux.HandleFunc("/", home)
 	mux.HandleFunc("/snippet/view", snippetView)
 	mux.HandleFunc("/snippet/create", snippetCreate)
