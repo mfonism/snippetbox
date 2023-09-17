@@ -8,12 +8,15 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/mfonism/snippetbox/internal/models"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
 	errorLog *log.Logger
 	infoLog *log.Logger
+	snippets *models.SnippetModel
 }
 
 func main() {
@@ -28,17 +31,18 @@ func main() {
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile|log.LUTC)
 
-	app := &application {
-		errorLog: errorLog,
-		infoLog: infoLog,
-	}
-
 	db, err := openDB(*dsn)
 	if err != nil {
-		app.errorLog.Fatal(err)
+		errorLog.Fatal(err)
 	}
 
 	defer db.Close()
+
+	app := &application {
+		errorLog: errorLog,
+		infoLog: infoLog,
+		snippets: &models.SnippetModel{DB: db},
+	}
 
 	srv := &http.Server{
 		Addr: *addr,
