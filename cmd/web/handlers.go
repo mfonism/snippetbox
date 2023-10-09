@@ -22,8 +22,23 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, snippet := range snippets {
-		fmt.Fprintf(w, "%+v\n", snippet)
+	templateFilenames := []string{
+		"./ui/html/base.tmpl",
+		"./ui/html/partials/nav.tmpl",
+		"./ui/html/pages/home.tmpl",
+	}
+
+	templateSet, err := template.ParseFiles(templateFilenames...)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	data := templateData {Snippets: snippets}
+
+	err = templateSet.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, err)
 	}
 }
 
