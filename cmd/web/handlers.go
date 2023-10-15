@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -53,7 +54,7 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	data.Form = snippetCreateForm{Expires: 365}
+	data.Form = snippetCreateForm{}
 
 	app.render(w, http.StatusOK, "create.tmpl", data)
 }
@@ -72,32 +73,34 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
 	form := snippetCreateForm{
-		Title: r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 		FieldErrors: map[string]string{},
 	}
 
-	if strings.TrimSpace(form.Title) == "" {
+	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
+	if err != nil {
+		form.FieldErrors["expires"] = "This field cannot be blank"
+	} else {
+		expirationChoices := []int{1, 7, 365}
+		if !slices.Contains(expirationChoices, expires) {
+			form.FieldErrors["expires"] = "This field must equal 1, 7 or 365"
+		}
+	}
+	form.Expires = expires
+
+	title := r.PostForm.Get("title")
+	if strings.TrimSpace(title) == "" {
 		form.FieldErrors["title"] = "This field cannot be blank"
-	} else if utf8.RuneCountInString(form.Title) > 100 {
+	} else if utf8.RuneCountInString(title) > 100 {
 		form.FieldErrors["title"] = "This field cannot be more than 100 characters long"
 	}
+	form.Title = title
 
-	if strings.TrimSpace(form.Content) == "" {
+	content := r.PostForm.Get("content")
+	if strings.TrimSpace(content) == "" {
 		form.FieldErrors["content"] = "This field cannot be blank"
 	}
-
-	if form.Expires != 1 && form.Expires != 7 && form.Expires != 365 {
-		form.FieldErrors["expires"] = "This field must equal 1, 7 or 365"
-	}
+	form.Content = content
 
 	if len(form.FieldErrors) > 0 {
 		data := app.newTemplateData(r)
