@@ -4,12 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"strconv"
-	"strings"
-	"unicode/utf8"
 
 	"github.com/mfonism/snippetbox/internal/models"
+	"github.com/mfonism/snippetbox/internal/validator"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -63,7 +61,7 @@ type snippetCreateForm struct {
 	Title string
 	Content string
 	Expires int
-	FieldErrors map[string]string
+	validator.Validator
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -73,36 +71,43 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	form := snippetCreateForm{
-		FieldErrors: map[string]string{},
-	}
+	form := snippetCreateForm{}
 
 	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		form.FieldErrors["expires"] = "This field cannot be blank"
-	} else {
-		expirationChoices := []int{1, 7, 365}
-		if !slices.Contains(expirationChoices, expires) {
-			form.FieldErrors["expires"] = "This field must equal 1, 7 or 365"
-		}
-	}
+	form.CheckField(
+		err == nil,
+		"expires",
+		"This field cannot be blank",
+	)
+	form.CheckField(
+		validator.PermittedInt(expires, 1, 7, 365),
+		"expires",
+		"This field must equal 1, 7 or 365",
+	)
 	form.Expires = expires
 
 	title := r.PostForm.Get("title")
-	if strings.TrimSpace(title) == "" {
-		form.FieldErrors["title"] = "This field cannot be blank"
-	} else if utf8.RuneCountInString(title) > 100 {
-		form.FieldErrors["title"] = "This field cannot be more than 100 characters long"
-	}
+	form.CheckField(
+		validator.NotBlank(title),
+		"title",
+		"This field cannot be blank",
+	)
+	form.CheckField(
+		validator.MaxChars(title, 100),
+		"title",
+		"This field cannot be more than 100 characters long",
+	)
 	form.Title = title
 
 	content := r.PostForm.Get("content")
-	if strings.TrimSpace(content) == "" {
-		form.FieldErrors["content"] = "This field cannot be blank"
-	}
+	form.CheckField(
+		validator.NotBlank(content),
+		"content",
+		"This field cannot be blank",
+	)
 	form.Content = content
 
-	if len(form.FieldErrors) > 0 {
+	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
 		app.render(w, http.StatusUnprocessableEntity, "create.tmpl", data)
