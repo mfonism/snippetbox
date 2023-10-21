@@ -58,10 +58,10 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 type snippetCreateForm struct {
-	Title string
-	Content string
-	Expires int
-	validator.Validator
+	Title string `form:"title"`
+	Content string `form:"content"`
+	Expires int `form:"expires"`
+	validator.Validator `form:"-"`
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
@@ -71,41 +71,34 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	form := snippetCreateForm{}
+	var form snippetCreateForm
 
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	form.CheckField(
-		err == nil,
-		"expires",
-		"This field cannot be blank",
-	)
-	form.CheckField(
-		validator.PermittedInt(expires, 1, 7, 365),
-		"expires",
-		"This field must equal 1, 7 or 365",
-	)
-	form.Expires = expires
+	err = app.formDecoder.Decode(&form, r.PostForm)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 
-	title := r.PostForm.Get("title")
 	form.CheckField(
-		validator.NotBlank(title),
+		validator.NotBlank(form.Title),
 		"title",
 		"This field cannot be blank",
 	)
 	form.CheckField(
-		validator.MaxChars(title, 100),
+		validator.MaxChars(form.Title, 100),
 		"title",
 		"This field cannot be more than 100 characters long",
 	)
-	form.Title = title
-
-	content := r.PostForm.Get("content")
 	form.CheckField(
-		validator.NotBlank(content),
+		validator.NotBlank(form.Content),
 		"content",
 		"This field cannot be blank",
 	)
-	form.Content = content
+	form.CheckField(
+		validator.PermittedInt(form.Expires, 1, 7, 365),
+		"expires",
+		"This field must equal 1, 7 or 365",
+	)
 
 	if !form.Valid() {
 		data := app.newTemplateData(r)
