@@ -28,7 +28,7 @@ type application struct {
 }
 
 func main() {
-	addr := flag.String("addr", ":666", "HTTP network address")
+	addr := flag.String("addr", "127.0.0.1:8080", "HTTP network address")
 
 	dbPass := os.Getenv("dbPass")
 	defaultDSN := fmt.Sprintf("web:%s@/snippetbox?parseTime=true", dbPass)
