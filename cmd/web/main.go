@@ -19,11 +19,11 @@ import (
 )
 
 type application struct {
-	errorLog *log.Logger
-	infoLog *log.Logger
-	snippets *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder *form.Decoder
+	errorLog       *log.Logger
+	infoLog        *log.Logger
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
 	sessionManager *scs.SessionManager
 }
 
@@ -57,19 +57,19 @@ func main() {
 	sessionManager.Store = mysqlstore.New(db)
 	sessionManager.Lifetime = 12 * time.Hour
 
-	app := &application {
-		errorLog: errorLog,
-		infoLog: infoLog,
-		snippets: &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		formDecoder: formDecoder,
+	app := &application{
+		errorLog:       errorLog,
+		infoLog:        infoLog,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
 		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{
-		Addr: *addr,
+		Addr:     *addr,
 		ErrorLog: app.errorLog,
-		Handler: app.routes(),
+		Handler:  app.routes(),
 	}
 
 	app.infoLog.Printf("Starting server on %s", *addr)
