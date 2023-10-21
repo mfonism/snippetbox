@@ -11,19 +11,37 @@ func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
 	// custom handler for 404 Not Found responses
-	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	router.NotFound = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w)
 	})
 
 	fileServer := http.FileServer(neuteredFileSystem{http.Dir("./ui/static/")})
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
-	router.HandlerFunc(http.MethodGet, "/", app.home)
-	router.HandlerFunc(http.MethodGet, "/snippet/view/:id", app.snippetView)
-	router.HandlerFunc(http.MethodGet, "/snippet/create", app.snippetCreate)
-	router.HandlerFunc(http.MethodPost, "/snippet/create", app.snippetCreatePost)
+	dynamicMiddlewareChain := alice.New(app.sessionManager.LoadAndSave)
 
-	middlewareChain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+	router.Handler(
+		http.MethodGet,
+		"/",
+		dynamicMiddlewareChain.ThenFunc(app.home),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/snippet/view/:id",
+		dynamicMiddlewareChain.ThenFunc(app.snippetView),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/snippet/create",
+		dynamicMiddlewareChain.ThenFunc(app.snippetCreate),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/snippet/create",
+		dynamicMiddlewareChain.ThenFunc(app.snippetCreatePost),
+	)
 
-	return middlewareChain.Then(router)
+	standardMiddlewareChain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
+
+	return standardMiddlewareChain.Then(router)
 }
