@@ -41,6 +41,32 @@ func (app *application) routes() http.Handler {
 		dynamicMiddlewareChain.ThenFunc(app.snippetCreatePost),
 	)
 
+	router.Handler(
+		http.MethodGet,
+		"/user/signup",
+		dynamicMiddlewareChain.ThenFunc(app.userSignup),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/signup",
+		dynamicMiddlewareChain.ThenFunc(app.userSignupPost),
+	)
+	router.Handler(
+		http.MethodGet,
+		"/user/login",
+		dynamicMiddlewareChain.ThenFunc(app.userLogin),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/login",
+		dynamicMiddlewareChain.ThenFunc(app.userLoginPost),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/user/logout",
+		dynamicMiddlewareChain.ThenFunc(app.userLogoutPost),
+	)
+
 	standardMiddlewareChain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
 
 	return standardMiddlewareChain.Then(router)
