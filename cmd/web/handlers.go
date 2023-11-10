@@ -195,6 +195,18 @@ type userLoginForm struct {
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
+
+	if data.IsAuthenticated {
+		app.sessionManager.Put(
+			r.Context(),
+			sessions.SessionFlashKey,
+			"Cannot log in when there's already a currently logged in user!",
+		)
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	data.Form = userLoginForm{}
 	app.render(w, http.StatusOK, "login.tmpl", data)
 }
