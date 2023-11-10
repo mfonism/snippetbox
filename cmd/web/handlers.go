@@ -123,10 +123,35 @@ type UserSignupForm struct {
 func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Form = UserSignupForm{}
+
+	if data.IsAuthenticated {
+		app.sessionManager.Put(
+			r.Context(),
+			sessions.SessionFlashKey,
+			"Cannot sign up when there's already a currently logged in user!",
+		)
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	app.render(w, http.StatusOK, "signup.tmpl", data)
 }
 
 func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	if data.IsAuthenticated {
+		app.sessionManager.Put(
+			r.Context(),
+			sessions.SessionFlashKey,
+			"Cannot sign up when there's already a currently logged in user!",
+		)
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	var form UserSignupForm
 
 	err := app.decodePostForm(r, &form)
@@ -172,7 +197,6 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrDuplicateEmail) {
 			form.AddFieldError("email", "Email address is already in  use")
 
-			data := app.newTemplateData(r)
 			data.Form = form
 			app.render(w, http.StatusUnprocessableEntity, "signup.tmpl", data)
 		} else {
