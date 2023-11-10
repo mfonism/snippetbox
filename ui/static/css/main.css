@@ -104,7 +104,7 @@ nav form {
     margin-left: 1.5em;
 }
 
-nav div {
+nav > div {
     width: 50%;
     float: left;
 }
