@@ -212,6 +212,19 @@ func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+
+	if data.IsAuthenticated {
+		app.sessionManager.Put(
+			r.Context(),
+			sessions.SessionFlashKey,
+			"Cannot log in when there's already a currently logged in user!",
+		)
+
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
 	var form userLoginForm
 
 	err := app.decodePostForm(r, &form)
@@ -253,7 +266,6 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrInvalidCredentials) {
 			form.AddNonFieldError("Email or password is incorrect")
 
-			data := app.newTemplateData(r)
 			data.Form = form
 			app.render(w, http.StatusUnprocessableEntity, "login.tmpl", data)
 		} else {
