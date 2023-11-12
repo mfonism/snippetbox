@@ -1,9 +1,14 @@
 {{define "nav"}}
 <nav>
+
     <div>
         <a href="/">Home</a>
+
+        {{if .IsAuthenticated}}
         <a href="/snippet/create">Create snippet</a>
+        {{end}}
     </div>
+
     <div>
         {{if not .IsAuthenticated}}
         <div>
@@ -16,5 +21,6 @@
         </form>
         {{end}}
     </div>
+
 </nav>
 {{end}}
