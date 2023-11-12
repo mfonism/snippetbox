@@ -309,7 +309,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
 	// add ID of current user to session, so that they're "logged in"
 	app.sessionManager.Put(r.Context(), sessions.SessionUserIDKey, id)
 
-	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
