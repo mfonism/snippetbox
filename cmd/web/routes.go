@@ -30,16 +30,6 @@ func (app *application) routes() http.Handler {
 		"/snippet/view/:id",
 		dynamicMiddlewareChain.ThenFunc(app.snippetView),
 	)
-	router.Handler(
-		http.MethodGet,
-		"/snippet/create",
-		dynamicMiddlewareChain.ThenFunc(app.snippetCreate),
-	)
-	router.Handler(
-		http.MethodPost,
-		"/snippet/create",
-		dynamicMiddlewareChain.ThenFunc(app.snippetCreatePost),
-	)
 
 	router.Handler(
 		http.MethodGet,
@@ -61,10 +51,23 @@ func (app *application) routes() http.Handler {
 		"/user/login",
 		dynamicMiddlewareChain.ThenFunc(app.userLoginPost),
 	)
+
+	requireAuthenticationMiddlewareChain := dynamicMiddlewareChain.Append(app.requireAuthentication)
+
+	router.Handler(
+		http.MethodGet,
+		"/snippet/create",
+		requireAuthenticationMiddlewareChain.ThenFunc(app.snippetCreate),
+	)
+	router.Handler(
+		http.MethodPost,
+		"/snippet/create",
+		requireAuthenticationMiddlewareChain.ThenFunc(app.snippetCreatePost),
+	)
 	router.Handler(
 		http.MethodPost,
 		"/user/logout",
-		dynamicMiddlewareChain.ThenFunc(app.userLogoutPost),
+		requireAuthenticationMiddlewareChain.ThenFunc(app.userLogoutPost),
 	)
 
 	standardMiddlewareChain := alice.New(app.recoverPanic, app.logRequest, secureHeaders)
