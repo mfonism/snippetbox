@@ -18,7 +18,12 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(neuteredFileSystem{http.Dir("./ui/static/")})
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
+	// middleware chains
 	dynamicMiddlewareChain := alice.New(app.sessionManager.LoadAndSave)
+	requireAuthenticationMiddlewareChain := dynamicMiddlewareChain.Append(app.requireAuthentication)
+	makeRequireLogoutMiddlewareChain := func(action string) alice.Chain {
+		return dynamicMiddlewareChain.Append(app.requireLogout(action))
+	}
 
 	router.Handler(
 		http.MethodGet,
@@ -31,29 +36,29 @@ func (app *application) routes() http.Handler {
 		dynamicMiddlewareChain.ThenFunc(app.snippetView),
 	)
 
+	// require logout
 	router.Handler(
 		http.MethodGet,
 		"/user/signup",
-		dynamicMiddlewareChain.ThenFunc(app.userSignup),
+		makeRequireLogoutMiddlewareChain("sign up").ThenFunc(app.userSignup),
 	)
 	router.Handler(
 		http.MethodPost,
 		"/user/signup",
-		dynamicMiddlewareChain.ThenFunc(app.userSignupPost),
+		makeRequireLogoutMiddlewareChain("sign up").ThenFunc(app.userSignupPost),
 	)
 	router.Handler(
 		http.MethodGet,
 		"/user/login",
-		dynamicMiddlewareChain.ThenFunc(app.userLogin),
+		makeRequireLogoutMiddlewareChain("log in").ThenFunc(app.userLogin),
 	)
 	router.Handler(
 		http.MethodPost,
 		"/user/login",
-		dynamicMiddlewareChain.ThenFunc(app.userLoginPost),
+		makeRequireLogoutMiddlewareChain("log in").ThenFunc(app.userLoginPost),
 	)
 
-	requireAuthenticationMiddlewareChain := dynamicMiddlewareChain.Append(app.requireAuthentication)
-
+	// require authentication
 	router.Handler(
 		http.MethodGet,
 		"/snippet/create",

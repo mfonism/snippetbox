@@ -124,17 +124,6 @@ func (app *application) userSignup(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 	data.Form = UserSignupForm{}
 
-	if data.IsAuthenticated {
-		app.sessionManager.Put(
-			r.Context(),
-			sessions.SessionFlashKey,
-			"Cannot sign up when there's already a currently logged in user!",
-		)
-
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
 	app.render(w, http.StatusOK, "signup.tmpl", data)
 }
 

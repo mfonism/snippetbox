@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/mfonism/snippetbox/internal/sessions"
 )
 
 func secureHeaders(next http.Handler) http.Handler {
@@ -54,4 +56,23 @@ func (app *application) requireAuthentication(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (app *application) requireLogout(action string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if app.IsAuthenticated(r) {
+				app.sessionManager.Put(
+					r.Context(),
+					sessions.SessionFlashKey,
+					fmt.Sprintf("Cannot %s when there's a logged in user. Please log them out first.", action),
+				)
+
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
