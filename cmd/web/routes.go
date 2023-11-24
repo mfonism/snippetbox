@@ -19,7 +19,7 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/static/*filepath", http.StripPrefix("/static", fileServer))
 
 	// middleware chains
-	dynamicMiddlewareChain := alice.New(app.sessionManager.LoadAndSave, noSurf)
+	dynamicMiddlewareChain := alice.New(app.sessionManager.LoadAndSave, noSurf, app.authenticate)
 	requireAuthenticationMiddlewareChain := dynamicMiddlewareChain.Append(app.requireAuthentication)
 	makeRequireLogoutMiddlewareChain := func(action string) alice.Chain {
 		return dynamicMiddlewareChain.Append(app.requireLogout(action))
